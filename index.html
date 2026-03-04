@@ -2,105 +2,346 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Larvae Counter</title>
   <style>
-    body { font-family: system-ui, Arial; margin: 14px; }
-    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
-    video, canvas { border: 1px solid #ccc; border-radius: 10px; max-width: 100%; }
-    .card { border: 1px solid #ddd; border-radius: 12px; padding: 12px; }
-    .stack { display: grid; gap: 10px; }
-    label { display: inline-flex; gap: 8px; align-items: center; margin-right: 10px; }
-    input[type="range"] { width: 220px; }
-    button { padding: 10px 12px; border-radius: 10px; border: 1px solid #ccc; background: #fff; cursor: pointer; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    .big { font-size: 22px; font-weight: 700; }
-    .muted { color: #555; font-size: 14px; }
-    .hint { font-size: 13px; color: #444; }
-    hr { border: none; border-top: 1px solid #eee; margin: 10px 0; }
+    :root{
+      --bg:#ffffff;
+      --card:#ffffff;
+      --border:#e6e6e6;
+      --text:#111;
+      --muted:#666;
+      --btn:#f7f7f7;
+      --shadow: 0 8px 24px rgba(0,0,0,.08);
+      --radius: 14px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    header{
+      padding: 12px 14px 8px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    header h1{
+      font-size: 22px;
+      margin:0;
+      font-weight: 800;
+      letter-spacing: .2px;
+    }
+    header .sub{
+      margin-top:6px;
+      color:var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    /* Viewer stays near top */
+    .viewer-wrap{
+      padding: 10px 12px 0 12px;
+    }
+    .viewer{
+      position: relative;
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      background: #000;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      aspect-ratio: 4 / 3;
+    }
+    .viewer video, .viewer canvas{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit: cover;
+    }
+    /* Output on top of video */
+    #out{ z-index: 2; }
+    #video{ z-index: 1; }
+
+    /* Count overlay on image */
+    .overlay{
+      position:absolute;
+      left:10px;
+      top:10px;
+      z-index: 3;
+      background: rgba(255,255,255,.92);
+      border: 1px solid rgba(0,0,0,.08);
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 16px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    .overlay small{
+      font-weight: 600;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    /* Sticky controls right under image */
+    .controls{
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--bg);
+      border-top: 1px solid transparent;
+      border-bottom: 1px solid var(--border);
+      padding: 10px 12px;
+      margin-top: 10px;
+    }
+    .controls-inner{
+      max-width: 720px;
+      margin: 0 auto;
+      display: grid;
+      gap: 8px;
+    }
+    .btnrow{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap: wrap;
+    }
+    button{
+      border: 1px solid var(--border);
+      background: var(--btn);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      min-height: 46px;
+    }
+    button:disabled{
+      opacity:.5;
+      cursor:not-allowed;
+    }
+    .pill{
+      border:1px solid var(--border);
+      border-radius: 999px;
+      padding: 10px 12px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      background: var(--card);
+      font-size: 14px;
+      font-weight: 650;
+    }
+    .pill input{
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Slide-up tune panel */
+    .tune-panel{
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding-bottom: calc(12px + var(--safe-bottom));
+      background: var(--card);
+      border-top-left-radius: 18px;
+      border-top-right-radius: 18px;
+      border: 1px solid var(--border);
+      box-shadow: 0 -14px 40px rgba(0,0,0,.18);
+      transform: translateY(110%);
+      transition: transform .22s ease;
+      z-index: 50;
+    }
+    .tune-panel.open{ transform: translateY(0); }
+
+    .tune-inner{
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 12px 12px 0 12px;
+    }
+    .handle{
+      width: 46px;
+      height: 5px;
+      border-radius: 999px;
+      background: #d9d9d9;
+      margin: 8px auto 10px auto;
+    }
+    .tune-title{
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .tune-title .left{
+      font-weight: 900;
+      font-size: 18px;
+    }
+    .tune-title .right{
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .slider{
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: #fff;
+    }
+    .slider-top{
+      display:flex;
+      justify-content: space-between;
+      align-items:center;
+      gap: 10px;
+      margin-bottom: 8px;
+      font-weight: 800;
+    }
+    .slider-top span{
+      color: var(--muted);
+      font-weight: 800;
+    }
+    .slider-controls{
+      display:grid;
+      grid-template-columns: 54px 1fr 54px;
+      gap: 10px;
+      align-items:center;
+    }
+    .stepbtn{
+      min-height: 44px;
+      border-radius: 12px;
+      font-size: 20px;
+      font-weight: 900;
+      background: #fff;
+    }
+    input[type="range"]{
+      width: 100%;
+      height: 34px;
+    }
+
+    /* Keep some space at bottom so page content not hidden by tune panel */
+    .spacer{ height: 12px; }
+    .statusline{
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    /* Hidden */
+    #cap, #fileInput{ display:none; }
   </style>
 </head>
+
 <body>
-  <h2>Larvae Counter</h2>
-  <div class="muted">
-    Best results: even lighting + larvae spread out + plain tray. Use <b>Low-contrast mode</b> for white tray photos.
+  <header>
+    <h1>Larvae Counter</h1>
+    <div class="sub">
+      Take photo top-down. Use <b>Low-contrast mode</b> for white tray photos. Tap <b>Tune</b> to adjust sliders.
+    </div>
+  </header>
+
+  <div class="viewer-wrap">
+    <div class="viewer">
+      <video id="video" playsinline autoplay muted></video>
+      <canvas id="out" width="360" height="270"></canvas>
+
+      <div class="overlay">
+        <div>Count: <span id="count">0</span></div>
+        <small id="overlayNote">ready</small>
+      </div>
+    </div>
+
+    <!-- hidden capture canvas for processing -->
+    <canvas id="cap" width="360" height="270"></canvas>
   </div>
 
-  <div class="row" style="margin-top: 12px;">
-    <div class="card stack" style="min-width: 330px;">
-      <div class="row">
-        <button id="btnStart">Start camera</button>
-        <button id="btnCapture" disabled>Capture & count</button>
+  <!-- Sticky controls near the picture -->
+  <div class="controls">
+    <div class="controls-inner">
+      <div class="btnrow">
+        <button id="btnStart">Start</button>
+        <button id="btnCapture" disabled>Capture</button>
         <button id="btnRecount" disabled>Count again</button>
+        <button id="btnTune" disabled>Tune</button>
+        <button id="btnUpload" disabled>Upload</button>
       </div>
 
-      <div class="row">
-        <label class="hint">
+      <div class="btnrow">
+        <label class="pill">
           <input id="useBH" type="checkbox" checked />
-          Low-contrast mode (recommended)
+          Low-contrast
         </label>
-        <label class="hint">
+
+        <label class="pill" title="Only used in Normal mode (when Low-contrast is OFF)">
           <input id="invert" type="checkbox" checked />
-          Invert (only for normal mode)
+          Invert (Normal mode)
         </label>
-        <label class="hint">
+
+        <label class="pill">
           <input id="showMask" type="checkbox" />
           Show mask
         </label>
       </div>
 
-      <div id="status" class="muted">Loading OpenCV…</div>
-
-      <div class="row">
-        <label>Threshold
-          <input id="thr" type="range" min="0" max="50" value="7" />
-          <span id="thrVal">7</span>
-        </label>
-      </div>
-
-      <div class="row">
-        <label>Min area
-          <input id="minArea" type="range" min="1" max="800" value="2" />
-          <span id="minAreaVal">2</span>
-        </label>
-        <label>Max area
-          <input id="maxArea" type="range" min="30" max="8000" value="900" />
-          <span id="maxAreaVal">900</span>
-        </label>
-      </div>
-
-      <div class="big">Count: <span id="count">0</span></div>
-
-      <div class="muted">
-        If count is too high → increase <b>Min area</b> (removes dust/bubbles).<br/>
-        If count is too low → reduce <b>Threshold</b> a little (7 → 6) or reduce <b>Min area</b>.
-      </div>
-
-      <hr>
-
-      <div class="muted">No camera? Upload a photo:</div>
-      <input id="fileInput" type="file" accept="image/*" />
-
-      <div class="muted">
-        Tip: if you see weird detections near borders, keep the tray filling most of the frame.
-      </div>
-    </div>
-
-    <div class="card stack">
-      <div class="muted">Live camera</div>
-      <video id="video" playsinline autoplay muted width="360"></video>
-    </div>
-
-    <div class="card stack">
-      <div class="muted">Captured frame</div>
-      <canvas id="cap" width="360" height="270"></canvas>
-    </div>
-
-    <div class="card stack">
-      <div class="muted">Output</div>
-      <canvas id="out" width="360" height="270"></canvas>
+      <div class="statusline" id="status">Loading OpenCV…</div>
     </div>
   </div>
+
+  <div class="spacer"></div>
+
+  <!-- Slide-up tuning panel -->
+  <div class="tune-panel" id="panel">
+    <div class="tune-inner">
+      <div class="handle"></div>
+
+      <div class="tune-title">
+        <div class="left">Tune detection</div>
+        <div class="right">Tip: adjust & press “Count again”</div>
+      </div>
+
+      <div class="slider">
+        <div class="slider-top">Threshold <span id="thrVal">7</span></div>
+        <div class="slider-controls">
+          <button class="stepbtn" id="thrMinus">−</button>
+          <input id="thr" type="range" min="0" max="50" value="7" />
+          <button class="stepbtn" id="thrPlus">+</button>
+        </div>
+      </div>
+
+      <div class="slider">
+        <div class="slider-top">Min area <span id="minAreaVal">2</span></div>
+        <div class="slider-controls">
+          <button class="stepbtn" id="minMinus">−</button>
+          <input id="minArea" type="range" min="1" max="800" value="2" />
+          <button class="stepbtn" id="minPlus">+</button>
+        </div>
+      </div>
+
+      <div class="slider">
+        <div class="slider-top">Max area <span id="maxAreaVal">900</span></div>
+        <div class="slider-controls">
+          <button class="stepbtn" id="maxMinus">−</button>
+          <input id="maxArea" type="range" min="30" max="8000" value="900" />
+          <button class="stepbtn" id="maxPlus">+</button>
+        </div>
+      </div>
+
+      <div class="btnrow" style="justify-content: space-between; padding-bottom: 12px;">
+        <button id="btnClose">Close</button>
+        <button id="btnQuickRecount">Count again</button>
+      </div>
+    </div>
+  </div>
+
+  <input id="fileInput" type="file" accept="image/*" />
 
   <!-- OpenCV.js -->
   <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
@@ -114,9 +355,12 @@
     const btnStart = document.getElementById('btnStart');
     const btnCapture = document.getElementById('btnCapture');
     const btnRecount = document.getElementById('btnRecount');
+    const btnTune = document.getElementById('btnTune');
+    const btnUpload = document.getElementById('btnUpload');
 
     const statusEl = document.getElementById('status');
     const countEl = document.getElementById('count');
+    const overlayNote = document.getElementById('overlayNote');
 
     const thr = document.getElementById('thr');
     const thrVal = document.getElementById('thrVal');
@@ -129,11 +373,47 @@
     const invert = document.getElementById('invert');
     const showMask = document.getElementById('showMask');
 
+    const panel = document.getElementById('panel');
+    const btnClose = document.getElementById('btnClose');
+    const btnQuickRecount = document.getElementById('btnQuickRecount');
+
     const fileInput = document.getElementById('fileInput');
 
-    thr.oninput = () => thrVal.textContent = thr.value;
-    minArea.oninput = () => minAreaVal.textContent = minArea.value;
-    maxArea.oninput = () => maxAreaVal.textContent = maxArea.value;
+    // step buttons
+    const thrMinus = document.getElementById('thrMinus');
+    const thrPlus  = document.getElementById('thrPlus');
+    const minMinus = document.getElementById('minMinus');
+    const minPlus  = document.getElementById('minPlus');
+    const maxMinus = document.getElementById('maxMinus');
+    const maxPlus  = document.getElementById('maxPlus');
+
+    function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+
+    function updateLabels(){
+      thrVal.textContent = thr.value;
+      minAreaVal.textContent = minArea.value;
+      maxAreaVal.textContent = maxArea.value;
+    }
+    thr.oninput = updateLabels;
+    minArea.oninput = updateLabels;
+    maxArea.oninput = updateLabels;
+    updateLabels();
+
+    function stepRange(el, delta){
+      const v = parseInt(el.value, 10);
+      const lo = parseInt(el.min, 10);
+      const hi = parseInt(el.max, 10);
+      el.value = clamp(v + delta, lo, hi);
+      updateLabels();
+    }
+
+    // Smaller steps for threshold; bigger for areas
+    thrMinus.onclick = () => stepRange(thr, -1);
+    thrPlus.onclick  = () => stepRange(thr, +1);
+    minMinus.onclick = () => stepRange(minArea, -1);
+    minPlus.onclick  = () => stepRange(minArea, +1);
+    maxMinus.onclick = () => stepRange(maxArea, -25);
+    maxPlus.onclick  = () => stepRange(maxArea, +25);
 
     let stream = null;
     let opencvReady = false;
@@ -145,9 +425,18 @@
         clearInterval(checkOpenCV);
         opencvReady = true;
         statusEl.textContent = "OpenCV ready";
+        overlayNote.textContent = "opencv ready";
         btnCapture.disabled = false;
+        btnTune.disabled = false;
+        btnUpload.disabled = false;
       }
     }, 50);
+
+    btnTune.onclick = () => panel.classList.add('open');
+    btnClose.onclick = () => panel.classList.remove('open');
+    btnQuickRecount.onclick = () => { panel.classList.remove('open'); if(hasCapturedSomething) runCount(); };
+
+    btnUpload.onclick = () => fileInput.click();
 
     btnStart.onclick = async () => {
       try {
@@ -157,8 +446,10 @@
         });
         video.srcObject = stream;
         statusEl.textContent = "Camera started";
+        overlayNote.textContent = "live";
       } catch (e) {
         statusEl.textContent = "Camera error: " + e.message;
+        overlayNote.textContent = "camera error";
       }
     };
 
@@ -186,6 +477,7 @@
       capCtx.drawImage(video, 0, 0, cap.width, cap.height);
       hasCapturedSomething = true;
       btnRecount.disabled = false;
+      overlayNote.textContent = "captured";
     }
 
     fileInput.addEventListener('change', (ev) => {
@@ -196,7 +488,7 @@
       img.onload = () => {
         fillWhiteBackground();
 
-        // Fit image into canvas while preserving aspect ratio
+        // Fit image into capture canvas while preserving aspect ratio
         const w = cap.width, h = cap.height;
         const scale = Math.min(w / img.width, h / img.height);
         const nw = Math.round(img.width * scale);
@@ -205,17 +497,22 @@
         const y = Math.round((h - nh) / 2);
 
         capCtx.drawImage(img, x, y, nw, nh);
+
         hasCapturedSomething = true;
         btnRecount.disabled = false;
+        statusEl.textContent = "Photo loaded — counting…";
+        overlayNote.textContent = "loaded";
         runCount();
       };
       img.src = URL.createObjectURL(file);
+      ev.target.value = ""; // allow re-upload same file
     });
 
     function runCount() {
       const result = countLarvaeFromCanvas(cap, out);
       countEl.textContent = result.count;
       statusEl.textContent = `Done. Found ${result.count}.`;
+      overlayNote.textContent = "done";
     }
 
     function countLarvaeFromCanvas(srcCanvas, dstCanvas) {
@@ -226,7 +523,7 @@
       const useBlackhat = useBH.checked;
       const useInvert = invert.checked;
 
-      let src = cv.imread(srcCanvas); // RGBA
+      let src = cv.imread(srcCanvas);
       let gray = new cv.Mat();
       cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
@@ -287,7 +584,6 @@
 
       cv.imshow(dstCanvas, dst);
 
-      // Cleanup
       src.delete(); gray.delete(); bin.delete(); tmp.delete(); blur.delete();
       contours.delete(); hierarchy.delete(); dst.delete();
 
