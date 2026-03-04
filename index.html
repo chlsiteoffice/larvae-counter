@@ -472,13 +472,47 @@
       capCtx.restore();
     }
 
-    function captureFromVideo() {
-      fillWhiteBackground();
-      capCtx.drawImage(video, 0, 0, cap.width, cap.height);
-      hasCapturedSomething = true;
-      btnRecount.disabled = false;
-      overlayNote.textContent = "captured";
-    }
+   function drawVideoCoverToCanvas(videoEl, canvasEl, ctx) {
+  const vw = videoEl.videoWidth;
+  const vh = videoEl.videoHeight;
+  if (!vw || !vh) return;
+
+  const cw = canvasEl.width;
+  const ch = canvasEl.height;
+
+  const videoAR = vw / vh;
+  const canvasAR = cw / ch;
+
+  // Crop the source frame to match "object-fit: cover" (center crop)
+  let sx, sy, sw, sh;
+
+  if (videoAR > canvasAR) {
+    // video is wider than canvas -> crop left/right
+    sh = vh;
+    sw = Math.round(vh * canvasAR);
+    sx = Math.round((vw - sw) / 2);
+    sy = 0;
+  } else {
+    // video is taller than canvas -> crop top/bottom
+    sw = vw;
+    sh = Math.round(vw / canvasAR);
+    sx = 0;
+    sy = Math.round((vh - sh) / 2);
+  }
+
+  ctx.drawImage(videoEl, sx, sy, sw, sh, 0, 0, cw, ch);
+}
+
+function captureFromVideo() {
+  fillWhiteBackground();
+
+  // IMPORTANT: capture using cover-crop so it matches what you see
+  drawVideoCoverToCanvas(video, cap, capCtx);
+
+  hasCapturedSomething = true;
+  btnRecount.disabled = false;
+  overlayNote.textContent = "captured";
+}
 
     fileInput.addEventListener('change', (ev) => {
       const file = ev.target.files?.[0];
@@ -592,3 +626,4 @@
   </script>
 </body>
 </html>
+
