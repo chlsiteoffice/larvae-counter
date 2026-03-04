@@ -1,0 +1,298 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Larvae Counter</title>
+  <style>
+    body { font-family: system-ui, Arial; margin: 14px; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
+    video, canvas { border: 1px solid #ccc; border-radius: 10px; max-width: 100%; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 12px; }
+    .stack { display: grid; gap: 10px; }
+    label { display: inline-flex; gap: 8px; align-items: center; margin-right: 10px; }
+    input[type="range"] { width: 220px; }
+    button { padding: 10px 12px; border-radius: 10px; border: 1px solid #ccc; background: #fff; cursor: pointer; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .big { font-size: 22px; font-weight: 700; }
+    .muted { color: #555; font-size: 14px; }
+    .hint { font-size: 13px; color: #444; }
+    hr { border: none; border-top: 1px solid #eee; margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <h2>Larvae Counter</h2>
+  <div class="muted">
+    Best results: even lighting + larvae spread out + plain tray. Use <b>Low-contrast mode</b> for white tray photos.
+  </div>
+
+  <div class="row" style="margin-top: 12px;">
+    <div class="card stack" style="min-width: 330px;">
+      <div class="row">
+        <button id="btnStart">Start camera</button>
+        <button id="btnCapture" disabled>Capture & count</button>
+        <button id="btnRecount" disabled>Count again</button>
+      </div>
+
+      <div class="row">
+        <label class="hint">
+          <input id="useBH" type="checkbox" checked />
+          Low-contrast mode (recommended)
+        </label>
+        <label class="hint">
+          <input id="invert" type="checkbox" checked />
+          Invert (only for normal mode)
+        </label>
+        <label class="hint">
+          <input id="showMask" type="checkbox" />
+          Show mask
+        </label>
+      </div>
+
+      <div id="status" class="muted">Loading OpenCV…</div>
+
+      <div class="row">
+        <label>Threshold
+          <input id="thr" type="range" min="0" max="50" value="7" />
+          <span id="thrVal">7</span>
+        </label>
+      </div>
+
+      <div class="row">
+        <label>Min area
+          <input id="minArea" type="range" min="1" max="800" value="2" />
+          <span id="minAreaVal">2</span>
+        </label>
+        <label>Max area
+          <input id="maxArea" type="range" min="30" max="8000" value="900" />
+          <span id="maxAreaVal">900</span>
+        </label>
+      </div>
+
+      <div class="big">Count: <span id="count">0</span></div>
+
+      <div class="muted">
+        If count is too high → increase <b>Min area</b> (removes dust/bubbles).<br/>
+        If count is too low → reduce <b>Threshold</b> a little (7 → 6) or reduce <b>Min area</b>.
+      </div>
+
+      <hr>
+
+      <div class="muted">No camera? Upload a photo:</div>
+      <input id="fileInput" type="file" accept="image/*" />
+
+      <div class="muted">
+        Tip: if you see weird detections near borders, keep the tray filling most of the frame.
+      </div>
+    </div>
+
+    <div class="card stack">
+      <div class="muted">Live camera</div>
+      <video id="video" playsinline autoplay muted width="360"></video>
+    </div>
+
+    <div class="card stack">
+      <div class="muted">Captured frame</div>
+      <canvas id="cap" width="360" height="270"></canvas>
+    </div>
+
+    <div class="card stack">
+      <div class="muted">Output</div>
+      <canvas id="out" width="360" height="270"></canvas>
+    </div>
+  </div>
+
+  <!-- OpenCV.js -->
+  <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
+
+  <script>
+    const video = document.getElementById('video');
+    const cap = document.getElementById('cap');
+    const out = document.getElementById('out');
+    const capCtx = cap.getContext('2d');
+
+    const btnStart = document.getElementById('btnStart');
+    const btnCapture = document.getElementById('btnCapture');
+    const btnRecount = document.getElementById('btnRecount');
+
+    const statusEl = document.getElementById('status');
+    const countEl = document.getElementById('count');
+
+    const thr = document.getElementById('thr');
+    const thrVal = document.getElementById('thrVal');
+    const minArea = document.getElementById('minArea');
+    const minAreaVal = document.getElementById('minAreaVal');
+    const maxArea = document.getElementById('maxArea');
+    const maxAreaVal = document.getElementById('maxAreaVal');
+
+    const useBH = document.getElementById('useBH');
+    const invert = document.getElementById('invert');
+    const showMask = document.getElementById('showMask');
+
+    const fileInput = document.getElementById('fileInput');
+
+    thr.oninput = () => thrVal.textContent = thr.value;
+    minArea.oninput = () => minAreaVal.textContent = minArea.value;
+    maxArea.oninput = () => maxAreaVal.textContent = maxArea.value;
+
+    let stream = null;
+    let opencvReady = false;
+    let hasCapturedSomething = false;
+
+    // Wait for OpenCV
+    const checkOpenCV = setInterval(() => {
+      if (window.cv && cv.Mat) {
+        clearInterval(checkOpenCV);
+        opencvReady = true;
+        statusEl.textContent = "OpenCV ready";
+        btnCapture.disabled = false;
+      }
+    }, 50);
+
+    btnStart.onclick = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+          audio: false
+        });
+        video.srcObject = stream;
+        statusEl.textContent = "Camera started";
+      } catch (e) {
+        statusEl.textContent = "Camera error: " + e.message;
+      }
+    };
+
+    btnCapture.onclick = () => {
+      if (!opencvReady) { statusEl.textContent = "OpenCV not ready yet"; return; }
+      captureFromVideo();
+      runCount();
+    };
+
+    btnRecount.onclick = () => {
+      if (!opencvReady || !hasCapturedSomething) return;
+      runCount();
+    };
+
+    function fillWhiteBackground() {
+      capCtx.save();
+      capCtx.globalCompositeOperation = "source-over";
+      capCtx.fillStyle = "#ffffff";
+      capCtx.fillRect(0, 0, cap.width, cap.height);
+      capCtx.restore();
+    }
+
+    function captureFromVideo() {
+      fillWhiteBackground();
+      capCtx.drawImage(video, 0, 0, cap.width, cap.height);
+      hasCapturedSomething = true;
+      btnRecount.disabled = false;
+    }
+
+    fileInput.addEventListener('change', (ev) => {
+      const file = ev.target.files?.[0];
+      if (!file) return;
+
+      const img = new Image();
+      img.onload = () => {
+        fillWhiteBackground();
+
+        // Fit image into canvas while preserving aspect ratio
+        const w = cap.width, h = cap.height;
+        const scale = Math.min(w / img.width, h / img.height);
+        const nw = Math.round(img.width * scale);
+        const nh = Math.round(img.height * scale);
+        const x = Math.round((w - nw) / 2);
+        const y = Math.round((h - nh) / 2);
+
+        capCtx.drawImage(img, x, y, nw, nh);
+        hasCapturedSomething = true;
+        btnRecount.disabled = false;
+        runCount();
+      };
+      img.src = URL.createObjectURL(file);
+    });
+
+    function runCount() {
+      const result = countLarvaeFromCanvas(cap, out);
+      countEl.textContent = result.count;
+      statusEl.textContent = `Done. Found ${result.count}.`;
+    }
+
+    function countLarvaeFromCanvas(srcCanvas, dstCanvas) {
+      const T = parseInt(thr.value, 10);
+      const MINA = parseInt(minArea.value, 10);
+      const MAXA = parseInt(maxArea.value, 10);
+
+      const useBlackhat = useBH.checked;
+      const useInvert = invert.checked;
+
+      let src = cv.imread(srcCanvas); // RGBA
+      let gray = new cv.Mat();
+      cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+
+      let bin = new cv.Mat();
+      let tmp = new cv.Mat();
+      let blur = new cv.Mat();
+
+      if (useBlackhat) {
+        // Low-contrast mode: BLACKHAT enhances dark larvae on bright tray
+        let bigK = cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(21, 21));
+        cv.morphologyEx(gray, tmp, cv.MORPH_BLACKHAT, bigK);
+        bigK.delete();
+
+        cv.GaussianBlur(tmp, tmp, new cv.Size(3, 3), 0);
+        cv.threshold(tmp, bin, T, 255, cv.THRESH_BINARY);
+      } else {
+        // Normal mode
+        cv.GaussianBlur(gray, blur, new cv.Size(5,5), 0);
+        const thrType = useInvert ? cv.THRESH_BINARY_INV : cv.THRESH_BINARY;
+        cv.threshold(blur, bin, T, 255, thrType);
+      }
+
+      // Clean specks
+      let k3 = cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(3,3));
+      cv.morphologyEx(bin, bin, cv.MORPH_OPEN, k3);
+      k3.delete();
+
+      // Debug mask view
+      if (showMask.checked) {
+        cv.imshow(dstCanvas, bin);
+        src.delete(); gray.delete(); bin.delete(); tmp.delete(); blur.delete();
+        return { count: 0 };
+      }
+
+      // Find contours
+      let contours = new cv.MatVector();
+      let hierarchy = new cv.Mat();
+      cv.findContours(bin, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+
+      let dst = src.clone();
+      let count = 0;
+
+      for (let i = 0; i < contours.size(); i++) {
+        const c = contours.get(i);
+        const area = cv.contourArea(c);
+
+        if (area < MINA || area > MAXA) { c.delete(); continue; }
+
+        const m = cv.moments(c);
+        if (m.m00 === 0) { c.delete(); continue; }
+        const cx = Math.round(m.m10 / m.m00);
+        const cy = Math.round(m.m01 / m.m00);
+
+        cv.circle(dst, new cv.Point(cx, cy), 6, new cv.Scalar(0, 255, 0, 255), 2);
+        count++;
+        c.delete();
+      }
+
+      cv.imshow(dstCanvas, dst);
+
+      // Cleanup
+      src.delete(); gray.delete(); bin.delete(); tmp.delete(); blur.delete();
+      contours.delete(); hierarchy.delete(); dst.delete();
+
+      return { count };
+    }
+  </script>
+</body>
+</html>
