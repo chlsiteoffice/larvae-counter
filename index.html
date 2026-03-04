@@ -16,14 +16,12 @@
       --radius: 14px;
       --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
-
     body{
       margin:0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       background:var(--bg);
       color:var(--text);
     }
-
     header{
       padding: 12px 14px 8px 14px;
       border-bottom: 1px solid var(--border);
@@ -41,10 +39,7 @@
       line-height: 1.35;
     }
 
-    /* Viewer stays near top */
-    .viewer-wrap{
-      padding: 10px 12px 0 12px;
-    }
+    .viewer-wrap{ padding: 10px 12px 0 12px; }
     .viewer{
       position: relative;
       width: 100%;
@@ -62,13 +57,11 @@
       inset:0;
       width:100%;
       height:100%;
-      object-fit: cover;
+      object-fit: cover; /* what user sees */
     }
-    /* Output on top of video */
     #out{ z-index: 2; }
     #video{ z-index: 1; }
 
-    /* Count overlay on image */
     .overlay{
       position:absolute;
       left:10px;
@@ -85,18 +78,16 @@
       align-items:center;
     }
     .overlay small{
-      font-weight: 600;
+      font-weight: 650;
       color: var(--muted);
       font-size: 12px;
     }
 
-    /* Sticky controls right under image */
     .controls{
       position: sticky;
       top: 0;
       z-index: 10;
       background: var(--bg);
-      border-top: 1px solid transparent;
       border-bottom: 1px solid var(--border);
       padding: 10px 12px;
       margin-top: 10px;
@@ -119,14 +110,12 @@
       border-radius: 14px;
       padding: 12px 14px;
       font-size: 16px;
-      font-weight: 700;
+      font-weight: 750;
       cursor: pointer;
       min-height: 46px;
     }
-    button:disabled{
-      opacity:.5;
-      cursor:not-allowed;
-    }
+    button:disabled{ opacity:.5; cursor:not-allowed; }
+
     .pill{
       border:1px solid var(--border);
       border-radius: 999px;
@@ -138,17 +127,11 @@
       font-size: 14px;
       font-weight: 650;
     }
-    .pill input{
-      width: 18px;
-      height: 18px;
-    }
+    .pill input{ width: 18px; height: 18px; }
 
-    /* Slide-up tune panel */
     .tune-panel{
       position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      left: 0; right: 0; bottom: 0;
       padding-bottom: calc(12px + var(--safe-bottom));
       background: var(--card);
       border-top-left-radius: 18px;
@@ -160,35 +143,17 @@
       z-index: 50;
     }
     .tune-panel.open{ transform: translateY(0); }
-
-    .tune-inner{
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 12px 12px 0 12px;
-    }
+    .tune-inner{ max-width: 720px; margin: 0 auto; padding: 12px 12px 0 12px; }
     .handle{
-      width: 46px;
-      height: 5px;
-      border-radius: 999px;
-      background: #d9d9d9;
-      margin: 8px auto 10px auto;
+      width: 46px; height: 5px; border-radius: 999px;
+      background: #d9d9d9; margin: 8px auto 10px auto;
     }
     .tune-title{
-      display:flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
+      display:flex; justify-content: space-between; align-items: center; gap: 10px;
       margin-bottom: 10px;
     }
-    .tune-title .left{
-      font-weight: 900;
-      font-size: 18px;
-    }
-    .tune-title .right{
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 650;
-    }
+    .tune-title .left{ font-weight: 900; font-size: 18px; }
+    .tune-title .right{ color: var(--muted); font-size: 13px; font-weight: 650; }
 
     .slider{
       border: 1px solid var(--border);
@@ -198,17 +163,10 @@
       background: #fff;
     }
     .slider-top{
-      display:flex;
-      justify-content: space-between;
-      align-items:center;
-      gap: 10px;
-      margin-bottom: 8px;
-      font-weight: 800;
+      display:flex; justify-content: space-between; align-items:center; gap: 10px;
+      margin-bottom: 8px; font-weight: 850;
     }
-    .slider-top span{
-      color: var(--muted);
-      font-weight: 800;
-    }
+    .slider-top span{ color: var(--muted); font-weight: 850; }
     .slider-controls{
       display:grid;
       grid-template-columns: 54px 1fr 54px;
@@ -222,20 +180,11 @@
       font-weight: 900;
       background: #fff;
     }
-    input[type="range"]{
-      width: 100%;
-      height: 34px;
-    }
+    input[type="range"]{ width: 100%; height: 34px; }
 
-    /* Keep some space at bottom so page content not hidden by tune panel */
-    .spacer{ height: 12px; }
-    .statusline{
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 650;
-    }
+    .statusline{ color: var(--muted); font-size: 13px; font-weight: 650; }
 
-    /* Hidden */
+    /* Hidden helpers */
     #cap, #fileInput{ display:none; }
   </style>
 </head>
@@ -244,7 +193,7 @@
   <header>
     <h1>Larvae Counter</h1>
     <div class="sub">
-      Take photo top-down. Use <b>Low-contrast mode</b> for white tray photos. Tap <b>Tune</b> to adjust sliders.
+      Take photo top-down. Low-contrast mode for white tray photos. Buttons stay near the picture.
     </div>
   </header>
 
@@ -259,11 +208,10 @@
       </div>
     </div>
 
-    <!-- hidden capture canvas for processing -->
+    <!-- hidden capture canvas used for processing -->
     <canvas id="cap" width="360" height="270"></canvas>
   </div>
 
-  <!-- Sticky controls near the picture -->
   <div class="controls">
     <div class="controls-inner">
       <div class="btnrow">
@@ -280,7 +228,7 @@
           Low-contrast
         </label>
 
-        <label class="pill" title="Only used in Normal mode (when Low-contrast is OFF)">
+        <label class="pill" title="Only used when Low-contrast is OFF">
           <input id="invert" type="checkbox" checked />
           Invert (Normal mode)
         </label>
@@ -295,16 +243,13 @@
     </div>
   </div>
 
-  <div class="spacer"></div>
-
-  <!-- Slide-up tuning panel -->
   <div class="tune-panel" id="panel">
     <div class="tune-inner">
       <div class="handle"></div>
 
       <div class="tune-title">
         <div class="left">Tune detection</div>
-        <div class="right">Tip: adjust & press “Count again”</div>
+        <div class="right">Adjust then tap “Count again”</div>
       </div>
 
       <div class="slider">
@@ -326,10 +271,10 @@
       </div>
 
       <div class="slider">
-        <div class="slider-top">Max area <span id="maxAreaVal">900</span></div>
+        <div class="slider-top">Max area <span id="maxAreaVal">2400</span></div>
         <div class="slider-controls">
           <button class="stepbtn" id="maxMinus">−</button>
-          <input id="maxArea" type="range" min="30" max="8000" value="900" />
+          <input id="maxArea" type="range" min="30" max="8000" value="2400" />
           <button class="stepbtn" id="maxPlus">+</button>
         </div>
       </div>
@@ -343,7 +288,6 @@
 
   <input id="fileInput" type="file" accept="image/*" />
 
-  <!-- OpenCV.js -->
   <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
 
   <script>
@@ -379,7 +323,6 @@
 
     const fileInput = document.getElementById('fileInput');
 
-    // step buttons
     const thrMinus = document.getElementById('thrMinus');
     const thrPlus  = document.getElementById('thrPlus');
     const minMinus = document.getElementById('minMinus');
@@ -388,7 +331,6 @@
     const maxPlus  = document.getElementById('maxPlus');
 
     function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
-
     function updateLabels(){
       thrVal.textContent = thr.value;
       minAreaVal.textContent = minArea.value;
@@ -406,8 +348,6 @@
       el.value = clamp(v + delta, lo, hi);
       updateLabels();
     }
-
-    // Smaller steps for threshold; bigger for areas
     thrMinus.onclick = () => stepRange(thr, -1);
     thrPlus.onclick  = () => stepRange(thr, +1);
     minMinus.onclick = () => stepRange(minArea, -1);
@@ -419,7 +359,6 @@
     let opencvReady = false;
     let hasCapturedSomething = false;
 
-    // Wait for OpenCV
     const checkOpenCV = setInterval(() => {
       if (window.cv && cv.Mat) {
         clearInterval(checkOpenCV);
@@ -434,7 +373,10 @@
 
     btnTune.onclick = () => panel.classList.add('open');
     btnClose.onclick = () => panel.classList.remove('open');
-    btnQuickRecount.onclick = () => { panel.classList.remove('open'); if(hasCapturedSomething) runCount(); };
+    btnQuickRecount.onclick = () => {
+      panel.classList.remove('open');
+      if (hasCapturedSomething) runCount();
+    };
 
     btnUpload.onclick = () => fileInput.click();
 
@@ -472,47 +414,47 @@
       capCtx.restore();
     }
 
-   function drawVideoCoverToCanvas(videoEl, canvasEl, ctx) {
-  const vw = videoEl.videoWidth;
-  const vh = videoEl.videoHeight;
-  if (!vw || !vh) return;
+    // Draw like object-fit: cover so capture == what you see in the frame
+    function drawCoverToCanvas(imgW, imgH, drawFn) {
+      const cw = cap.width, ch = cap.height;
+      const srcAR = imgW / imgH;
+      const canvasAR = cw / ch;
 
-  const cw = canvasEl.width;
-  const ch = canvasEl.height;
+      let sx, sy, sw, sh;
 
-  const videoAR = vw / vh;
-  const canvasAR = cw / ch;
+      if (srcAR > canvasAR) {
+        sh = imgH;
+        sw = Math.round(imgH * canvasAR);
+        sx = Math.round((imgW - sw) / 2);
+        sy = 0;
+      } else {
+        sw = imgW;
+        sh = Math.round(imgW / canvasAR);
+        sx = 0;
+        sy = Math.round((imgH - sh) / 2);
+      }
 
-  // Crop the source frame to match "object-fit: cover" (center crop)
-  let sx, sy, sw, sh;
+      drawFn(sx, sy, sw, sh, cw, ch);
+    }
 
-  if (videoAR > canvasAR) {
-    // video is wider than canvas -> crop left/right
-    sh = vh;
-    sw = Math.round(vh * canvasAR);
-    sx = Math.round((vw - sw) / 2);
-    sy = 0;
-  } else {
-    // video is taller than canvas -> crop top/bottom
-    sw = vw;
-    sh = Math.round(vw / canvasAR);
-    sx = 0;
-    sy = Math.round((vh - sh) / 2);
-  }
+    function captureFromVideo() {
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      if (!vw || !vh) {
+        statusEl.textContent = "Camera not ready (wait 1 sec)";
+        return;
+      }
 
-  ctx.drawImage(videoEl, sx, sy, sw, sh, 0, 0, cw, ch);
-}
+      fillWhiteBackground();
 
-function captureFromVideo() {
-  fillWhiteBackground();
+      drawCoverToCanvas(vw, vh, (sx, sy, sw, sh, cw, ch) => {
+        capCtx.drawImage(video, sx, sy, sw, sh, 0, 0, cw, ch);
+      });
 
-  // IMPORTANT: capture using cover-crop so it matches what you see
-  drawVideoCoverToCanvas(video, cap, capCtx);
-
-  hasCapturedSomething = true;
-  btnRecount.disabled = false;
-  overlayNote.textContent = "captured";
-}
+      hasCapturedSomething = true;
+      btnRecount.disabled = false;
+      overlayNote.textContent = "captured";
+    }
 
     fileInput.addEventListener('change', (ev) => {
       const file = ev.target.files?.[0];
@@ -522,15 +464,9 @@ function captureFromVideo() {
       img.onload = () => {
         fillWhiteBackground();
 
-        // Fit image into capture canvas while preserving aspect ratio
-        const w = cap.width, h = cap.height;
-        const scale = Math.min(w / img.width, h / img.height);
-        const nw = Math.round(img.width * scale);
-        const nh = Math.round(img.height * scale);
-        const x = Math.round((w - nw) / 2);
-        const y = Math.round((h - nh) / 2);
-
-        capCtx.drawImage(img, x, y, nw, nh);
+        drawCoverToCanvas(img.width, img.height, (sx, sy, sw, sh, cw, ch) => {
+          capCtx.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch);
+        });
 
         hasCapturedSomething = true;
         btnRecount.disabled = false;
@@ -539,7 +475,7 @@ function captureFromVideo() {
         runCount();
       };
       img.src = URL.createObjectURL(file);
-      ev.target.value = ""; // allow re-upload same file
+      ev.target.value = "";
     });
 
     function runCount() {
@@ -566,7 +502,6 @@ function captureFromVideo() {
       let blur = new cv.Mat();
 
       if (useBlackhat) {
-        // Low-contrast mode: BLACKHAT enhances dark larvae on bright tray
         let bigK = cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(21, 21));
         cv.morphologyEx(gray, tmp, cv.MORPH_BLACKHAT, bigK);
         bigK.delete();
@@ -574,25 +509,21 @@ function captureFromVideo() {
         cv.GaussianBlur(tmp, tmp, new cv.Size(3, 3), 0);
         cv.threshold(tmp, bin, T, 255, cv.THRESH_BINARY);
       } else {
-        // Normal mode
         cv.GaussianBlur(gray, blur, new cv.Size(5,5), 0);
         const thrType = useInvert ? cv.THRESH_BINARY_INV : cv.THRESH_BINARY;
         cv.threshold(blur, bin, T, 255, thrType);
       }
 
-      // Clean specks
       let k3 = cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(3,3));
       cv.morphologyEx(bin, bin, cv.MORPH_OPEN, k3);
       k3.delete();
 
-      // Debug mask view
       if (showMask.checked) {
         cv.imshow(dstCanvas, bin);
         src.delete(); gray.delete(); bin.delete(); tmp.delete(); blur.delete();
         return { count: 0 };
       }
 
-      // Find contours
       let contours = new cv.MatVector();
       let hierarchy = new cv.Mat();
       cv.findContours(bin, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
@@ -611,7 +542,9 @@ function captureFromVideo() {
         const cx = Math.round(m.m10 / m.m00);
         const cy = Math.round(m.m01 / m.m00);
 
-        cv.circle(dst, new cv.Point(cx, cy), 6, new cv.Scalar(0, 255, 0, 255), 2);
+        // Smaller marker (ring)
+        cv.circle(dst, new cv.Point(cx, cy), 3, new cv.Scalar(0, 255, 0, 255), 2);
+
         count++;
         c.delete();
       }
@@ -626,4 +559,3 @@ function captureFromVideo() {
   </script>
 </body>
 </html>
-
